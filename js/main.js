@@ -19,6 +19,7 @@
     window.addEventListener("keydown", (e) => {
       if (e.repeat) return;
       if (e.code === "KeyM") { const m = FP.Audio.toggleMute(); }
+      if (e.code === "KeyO" && FP.Sprites) { FP.Sprites.debug = !FP.Sprites.debug; }
       if (e.code === "Escape" || e.code === "KeyP") {
         if (game && game.screen === "fight" && game.match) {
           game.match.paused = !game.match.paused;
@@ -80,6 +81,9 @@
     ctx.imageSmoothingEnabled = true;
     game = FP.Game ? new FP.Game(canvas) : null;
     FP.game = game;
+    // Load Ryu's sprite sheet. If assets/ryu.png is present it will be used
+    // for Ryu; otherwise the engine silently falls back to procedural art.
+    if (FP.Sprites) FP.Sprites.load("ryu", "assets/ryu.png");
     bindGlobalKeys();
 
     const hint = document.getElementById("hint");

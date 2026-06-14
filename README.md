@@ -50,9 +50,25 @@ Notation is relative to the way you're facing (▶ = toward the opponent):
 | ▼ ↙ ◀ + Kick | **Advancing special** (Blade Kick / Cyclone Roll …) |
 | ▼ ↘ ▶ ▼ ↘ ▶ + Punch | **SUPER** (needs a full meter) |
 
-Goro the grappler swaps the projectile/uppercut for a **shockwave stomp** and **command grabs**.
+Do a special with **two** of its attack buttons (and at least half an EX bar) for an **EX** enhanced version. Goro the grappler swaps the projectile/uppercut for a **shockwave stomp** and **command grabs**.
+
+Other keys: `M` mute · `Esc` / `P` pause · `O` sprite-atlas calibration overlay.
 
 ---
+
+## 🖼️ Sprite assets (Ryu)
+
+Ryu can be rendered from a **sprite sheet** (`assets/ryu.png`) through a full
+atlas pipeline — frame slicing, a state→animation table, after-image trails and
+a hurt-flash. If the sheet is missing the engine falls back to the procedural
+renderer, so the game always runs. Every other fighter uses procedural art.
+
+A placeholder `assets/ryu.png` is baked from the engine so the path is live out
+of the box. **To use your own Ryu artwork, drop it in as `assets/ryu.png`** and
+align it with the in-game calibration overlay (**press `O`**). Full instructions
+in [`assets/README.md`](assets/README.md).
+
+![Ryu sprites](docs/ryu_sprites.png)
 
 ## ✨ Features
 
@@ -60,7 +76,8 @@ Goro the grappler swaps the projectile/uppercut for a **shockwave stomp** and **
   - **Ryu — The Wanderer** (balanced shoto), **Kenji — The Ronin** (long-range swordsman),
     **Liana — The Phoenix** (fast rushdown), **Goro — The Beast** (slow grappler), **Azuma — The Ninja** (mix-up tricks).
 - **Procedural skeletal animation** — one forward-kinematics humanoid rig drives idle, walk, dash, crouch, jump, block, every normal/crouching/jumping attack, three specials, a super, throws, hurt reactions, knockdown, get-up, intro and victory — with smooth breathing and momentum.
-- **Real fighting-game systems:** hitboxes/hurtboxes, startup/active/recovery frame data, hitstun & blockstun, chip damage, **counter-hits**, **combos with damage scaling**, juggles, knockdowns, wake-up, **super meter**, motion-input buffering and corner pushboxes.
+- **Real fighting-game systems:** hitboxes/hurtboxes, startup/active/recovery frame data, hitstun & blockstun, chip damage, **counter-hits**, **reversals**, **throws & throw-techs**, **combos with damage scaling**, juggles, knockdowns, wake-up, **super meter + EX gauge** (EX specials), motion-input buffering and corner pushboxes.
+- **HUD assets:** animated health bars with chip-ghost, segmented **SUPER** + **EX** bars, round-timer, **win-stars** with P1/P2 badges, combo counter, and **COUNTER! / REVERSAL! / TECHNICAL! / K.O.** callouts.
 - **Game feel:** fixed 60 Hz physics, **hit-stop** impact freeze, screen shake, hit sparks, dust, energy auras, fireball trails, a dynamic **camera** that follows and zooms, and **slow-mo KO** cinematics.
 - **Two parallax stages** drawn entirely in code — *Downtown Temple* (sunset, torii gate, cherry blossoms, lanterns) and *Harbor Night* (moonlit skyline, cranes, embers).
 - **Full game flow:** animated title, character select with live previews, VS splash, best-of-3 rounds, round timer, KO/Perfect/Time-Up, win pips, an **Arcade ladder**, local **Versus**, an **AI-vs-AI** attract mode and a **Training** dummy.

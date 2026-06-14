@@ -59,6 +59,7 @@
     // ----- world API used by fighters -----
     spawnProjectile(p) { this.projectiles.push(p); }
     addText(x, y, t, color, big) { this.fx.addText(x, y, t, color, big); }
+    addCallout(side, text, color) { this.hud.setCallout(side, text, color); }
     superFlash(f) {
       this.fx.flash(f.char.auraColor, 0.5);
       this.fx.shake(8, 0.3);

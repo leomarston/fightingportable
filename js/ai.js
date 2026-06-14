@@ -23,14 +23,17 @@
     fwdKey() { return this.me.facing > 0 ? "right" : "left"; }
     backKey() { return this.me.facing > 0 ? "left" : "right"; }
 
-    // push a special-move motion onto the queue (frames are short taps)
-    queueMotion(type, btn) {
+    // push a special-move motion onto the queue (frames are short taps).
+    // pass ex=true (with a half EX bar) to press two buttons -> EX version.
+    queueMotion(type, btn, ex) {
       const F = this.fwdKey(), B = this.backKey();
       const s = [];
+      const useEx = ex && this.me.ex >= 50;
+      const pressBtn = useEx ? [btn, btn === "lp" ? "mp" : btn === "lk" ? "mk" : "lp"] : btn;
       const step = (hold, frames, press) => s.push({ hold: hold.slice(), frames, press });
-      if (type === "qcf") { step(["down"], 2); step(["down", F], 2); step([F], 2, btn); }
-      else if (type === "dp") { step([F], 2); step(["down"], 2); step(["down", F], 2, btn); }
-      else if (type === "qcb") { step(["down"], 2); step(["down", B], 2); step([B], 2, btn); }
+      if (type === "qcf") { step(["down"], 2); step(["down", F], 2); step([F], 2, pressBtn); }
+      else if (type === "dp") { step([F], 2); step(["down"], 2); step(["down", F], 2, pressBtn); }
+      else if (type === "qcb") { step(["down"], 2); step(["down", B], 2); step([B], 2, pressBtn); }
       else if (type === "super") { step(["down"], 2); step(["down", F], 1); step([F], 1); step(["down"], 1); step(["down", F], 1); step([F], 2, btn); }
       this.queue = s;
     }
@@ -38,7 +41,7 @@
     apply(holdArr, press) {
       const w = {};
       for (const k of holdArr) w[k] = true;
-      if (press) w[press] = true;
+      if (press) { if (Array.isArray(press)) press.forEach((p) => (w[p] = true)); else w[press] = true; }
       for (const b of BTNS) this.pad._set(b, !!w[b]);
     }
 
@@ -113,7 +116,7 @@
       else if (r < 0.56) { this.plan = "heavy"; this.planT = 2; this.pokeBtn = U.pick(["hp", "hk", "mk"]); }
       else if (r < 0.70) { this.plan = "lowpoke"; this.planT = 2; }
       else if (r < 0.82) { this.plan = "throw"; this.planT = 2; }
-      else if (r < 0.93 && U.chance(0.4 + this.diff * 0.4)) { this.queueMotion(U.pick(["qcf", "dp"]), "mp"); }
+      else if (r < 0.93 && U.chance(0.4 + this.diff * 0.4)) { this.queueMotion(U.pick(["qcf", "dp"]), "mp", U.chance(0.6)); }
       else { this.plan = "poke"; this.planT = 2; this.pokeBtn = "lp"; }
     }
 

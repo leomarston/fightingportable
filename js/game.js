@@ -213,6 +213,47 @@
       }
       // fade overlay
       if (this.fade > 0.001) { ctx.fillStyle = `rgba(0,0,0,${this.fade})`; ctx.fillRect(0, 0, this.vw, this.vh); }
+
+      // sprite-atlas calibration overlay (toggle with O)
+      if (FP.Sprites && FP.Sprites.debug) this.drawAtlasDebug(ctx);
+    }
+
+    // Visual aid for aligning a hand-drawn sheet to the atlas grid.
+    drawAtlasDebug(ctx) {
+      ctx.save();
+      ctx.fillStyle = "rgba(4,6,12,.9)"; ctx.fillRect(0, 0, this.vw, this.vh);
+      const sh = FP.Sprites.get("ryu");
+      const prof = FP.AtlasRyu ? FP.AtlasRyu.current : null;
+      ctx.fillStyle = "#ffd24a"; ctx.font = "900 20px 'Trebuchet MS'"; ctx.textAlign = "left";
+      ctx.fillText("ATLAS CALIBRATION  ·  profile: " + (FP.AtlasRyu ? FP.AtlasRyu.ACTIVE : "?") + "   (press O to close)", 20, 30);
+      ctx.font = "13px 'Trebuchet MS'"; ctx.fillStyle = "#cdd";
+      if (!sh || !sh.ready) {
+        ctx.fillText("assets/ryu.png not loaded — drop your sheet there and reload.", 20, 54);
+        ctx.restore(); return;
+      }
+      // fit the sheet into the screen
+      const pad = 60, availW = this.vw - pad * 2, availH = this.vh - pad * 2 - 30;
+      const sc = Math.min(availW / sh.w, availH / sh.h);
+      const ox = (this.vw - sh.w * sc) / 2, oy = 50 + (availH - sh.h * sc) / 2;
+      ctx.drawImage(sh.img, ox, oy, sh.w * sc, sh.h * sc);
+      // overlay cell rects
+      if (prof) {
+        ctx.lineWidth = 1; ctx.font = "9px monospace";
+        for (let i = 0; i < prof.cells.length; i++) {
+          const r = prof.rect(i);
+          ctx.strokeStyle = "rgba(63,182,255,.7)";
+          ctx.strokeRect(ox + r.x * sc, oy + r.y * sc, r.w * sc, r.h * sc);
+        }
+        // label anims
+        ctx.fillStyle = "#9bf";
+        for (const key in prof.anims) {
+          const c0 = prof.anims[key].cells[0]; const r = prof.rect(c0);
+          ctx.fillText(key, ox + r.x * sc + 2, oy + r.y * sc + 10);
+        }
+      }
+      ctx.fillStyle = "#bcd"; ctx.font = "12px 'Trebuchet MS'";
+      ctx.fillText("Tune grid constants in js/atlas_ryu.js (CW/CH/COLS for 'baked', or the 'source' table) until cells frame your art.", 20, this.vh - 18);
+      ctx.restore();
     }
 
     drawBackdrop(ctx) {

@@ -31,6 +31,10 @@
       this.onGround = true;
       this.health = this.maxHP;
       this.meter = 0;
+      this.ex = 0;                  // EX gauge (0..100), spends 50 for EX specials
+      this.reversalWindow = 0;      // brief window after leaving stun -> REVERSAL!
+      this.lastThrowInput = -99;    // for throw techs -> TECHNICAL!
+      this._wasStunned = false;
       this.state = "intro";
       this.stateT = 0;
       this.hitstun = 0; this.blockstun = 0;
@@ -122,6 +126,21 @@
       this.gframe = (this.gframe || 0) + 1;
       this.animT++;
       this.stateT++;
+
+      // sprite animation clock (resets when the atlas animation changes)
+      if (FP.AtlasRyu) {
+        const k = FP.AtlasRyu.animFor(this);
+        if (k !== this._spriteKey) { this._spriteKey = k; this.spriteT = 0; }
+        else this.spriteT = (this.spriteT || 0) + FP.DT;
+      }
+      // after-image trail for fast actions (dash / specials / air attacks)
+      const fast = this.state === "dash" || this.state === "special" || this.state === "super" || (!this.onGround && this.attack);
+      this.trail = this.trail || [];
+      if (fast && FP.Sprites && FP.Sprites.ready("ryu") && this.char.id === "ryu") {
+        this.trail.push({ x: this.x, y: this.y, facing: this.facing, rect: FP.AtlasRyu.frameRectFor(this), life: 0.2 });
+        if (this.trail.length > 7) this.trail.shift();
+      }
+      for (let i = this.trail.length - 1; i >= 0; i--) { this.trail[i].life -= FP.DT; if (this.trail[i].life <= 0) this.trail.splice(i, 1); }
       if (this.flashWhite > 0) this.flashWhite = Math.max(0, this.flashWhite - 0.12);
       if (this.invuln > 0) this.invuln--;
       if (this.dashCD > 0) this.dashCD--;
@@ -138,6 +157,14 @@
 
       // controller produces input into this.pad before update (AI) ; humans already have it
       const pad = this.pad;
+
+      // reversal window: brief actionable beat right after leaving stun
+      if (this._wasStunned && this.hitstun <= 0 && this.blockstun <= 0) this.reversalWindow = 12;
+      this._wasStunned = this.hitstun > 0 || this.blockstun > 0;
+      if (this.reversalWindow > 0) this.reversalWindow--;
+      // remember throw inputs for throw-tech (TECHNICAL!) detection
+      if ((pad.pressed.lp && pad.down.lk) || (pad.pressed.lk && pad.down.lp) || (pad.pressed.lp && pad.pressed.lk)) this.lastThrowInput = this.gframe;
+
       const fwd = this.facing;             // forward = facing dir
       const dir = pad.dirNumpad();
       const holdingBack = (fwd > 0 && pad.down.left) || (fwd < 0 && pad.down.right);
@@ -152,6 +179,7 @@
 
       // meter clamp
       this.meter = U.clamp(this.meter, 0, 100);
+      this.ex = U.clamp(this.ex, 0, 100);
       this.health = Math.max(0, this.health);
     }
 
@@ -390,13 +418,23 @@
       }
       for (const sp of moves.specials) {
         if (pad.motion(sp.motion, sp.btns, f, 16)) {
-          if (this.meter >= sp.meter * 0) { this.startSpecial(sp); return true; }
+          // EX version: two of the move's buttons + at least half an EX bar
+          const ex = sp.btns.filter((b) => pad.pressed[b]).length >= 2 && this.ex >= 50;
+          this.startSpecial(sp, ex);
+          return true;
         }
       }
       return false;
     }
-    startSpecial(sp) {
+    startSpecial(sp, ex) {
       this.attack = { move: sp, special: sp, total: sp.startup + sp.active + sp.recovery, phase: "startup", id: ++this.attackId, fired: false };
+      if (ex) {
+        this.ex -= 50; this.attack.ex = true; this.attack.exMult = 1.45;
+        this.world.fx.flash(this.char.auraColor, 0.4); this.world.fx.shake(7, 0.22);
+        this.world.addText(this.x, this.y - 205 * this.scale, "EX", this.char.auraColor, true);
+        this.invuln = Math.max(this.invuln, (sp.invuln || 0) + sp.startup + 2);
+      }
+      if (this.reversalWindow > 0) this.attack.isReversal = true;
       this.hitThisAttack = false;
       this.setState("special");
       this.setAnim(sp.anim, this.attack.total, false);
@@ -445,13 +483,14 @@
     }
     spawnProjectile(sp) {
       const pj = sp.proj || { speed: 540, color: this.char.pal.energy, color2: this.char.pal.energy2, r: 20, life: 1.5, dmg: sp.dmg };
+      const ex = this.attack && this.attack.ex;
       const y = this.y - 110 * this.scale;
       const p = new FP.Projectile({
-        x: this.x + this.facing * 60 * this.scale, y, vx: this.facing * pj.speed, vy: 0,
-        r: pj.r, dmg: pj.dmg, owner: this.index, facing: this.facing,
-        color: pj.color, color2: pj.color2, life: pj.life,
+        x: this.x + this.facing * 60 * this.scale, y, vx: this.facing * pj.speed * (ex ? 1.15 : 1), vy: 0,
+        r: pj.r * (ex ? 1.5 : 1), dmg: Math.round(pj.dmg * (ex ? 1.45 : 1)), owner: this.index, facing: this.facing,
+        color: ex ? "#ffffff" : pj.color, color2: pj.color2, life: pj.life,
         kind: pj.fire ? "fire" : pj.slash ? "slash" : pj.spin ? "spin" : "ball",
-        hits: pj.hits || 1, fx: this.world.fx,
+        hits: (pj.hits || 1) + (ex ? 2 : 0), fx: this.world.fx,
       });
       this.world.spawnProjectile(p);
       this.world.fx.explode(p.x, y, pj.color, pj.color2, 16, 0.7);
@@ -520,6 +559,19 @@
       if (this.stateT >= this.animDur) this.toNeutral();
     }
     getThrown(by, dmg, isCommand) {
+      // throw tech (TECHNICAL!): normal throws can be escaped with a near-
+      // simultaneous throw input; command grabs cannot.
+      if (!isCommand && (this.gframe - (this.lastThrowInput || -99) < 11)) {
+        this.vx = -by.facing * 220; this.pushTimer = 8;
+        by.vx = -by.facing * 220; by.pushTimer = 8;
+        this.world.addCallout(this.index, "TECHNICAL!", "#7bdc4a");
+        this.world.addCallout(by.index, "TECHNICAL!", "#7bdc4a");
+        this.world.fx.blockSpark((this.x + by.x) / 2, this.y - 100 * this.scale, by.facing);
+        this.ex += 6; by.ex += 6;
+        if (by.state === "throwStart") by.toNeutral();
+        FP.Audio.block();
+        return;
+      }
       this.damage(dmg, by, true);
       this.facing = -by.facing;
       this.x = by.x + by.facing * 60;
@@ -576,6 +628,7 @@
       this.vx = attacker.facing * (m.push || 80) * 1.2; this.pushTimer = 8;
       attacker.vx = -attacker.facing * (m.push || 80) * 0.4; attacker.pushTimer = 6;
       this.meter += 2; attacker.meter += 2;
+      this.ex += 4; attacker.ex += 3;
       FP.Audio.block();
     }
 
@@ -585,11 +638,21 @@
       // combo scaling on attacker's running combo
       const combo = attacker.comboHits;
       const scale = Math.max(0.25, 1 - combo * 0.07);
-      dmg = Math.round(dmg * scale * (counter ? 1.2 : 1));
+      const exm = (attacker.attack && attacker.attack.exMult) || 1;
+      dmg = Math.round(dmg * scale * (counter ? 1.2 : 1) * exm);
       this.damage(dmg, attacker, false);
 
       attacker.comboHits++; attacker.comboTimer = 50;
       attacker.meter += (m.meter || 5); this.meter += Math.round((m.meter || 5) * 0.6);
+      attacker.ex += (m.meter || 5) * 1.2; this.ex += (m.meter || 5) * 0.8;
+
+      // reversal / counter callouts (HUD assets)
+      if (attacker.attack && attacker.attack.isReversal) {
+        attacker.attack.isReversal = false;
+        this.world.addCallout(attacker.index, "REVERSAL!", "#b78bff");
+      } else if (counter) {
+        this.world.addCallout(attacker.index, "COUNTER!", "#ff5b5b");
+      }
 
       const power = U.clamp(m.dmg / 90, 0.5, 2);
       const px = U.lerp(this.x, attacker.x, 0.55);
@@ -685,15 +748,44 @@
     draw(ctx) {
       const airH = this.onGround ? 0 : (this.world.groundY - this.y);
       const glow = (this.chargeGlow > 0.15) ? U.hexA(this.char.auraColor, Math.min(0.9, this.chargeGlow)) : null;
-      // meter-full shimmer
       const ready = this.meter >= 100 && this.state !== "ko";
-      const anchor = FP.Render.draw(ctx, {
-        x: this.x, y: this.y, facing: this.facing, char: this.char,
-        pose: this.poseNow(), airHeight: airH,
-        flashWhite: this.flashWhite,
-        outlineGlow: glow || (ready ? U.hexA(this.char.auraColor, 0.5 + 0.3 * Math.sin(performance.now() / 120)) : null),
-      });
-      this._anchor = anchor;
+      const outline = glow || (ready ? U.hexA(this.char.auraColor, 0.5 + 0.3 * Math.sin(performance.now() / 120)) : null);
+
+      // ---- sprite-sheet path (Ryu) with procedural fallback ----
+      let drewSprite = false;
+      if (this.char.id === "ryu" && FP.Sprites && FP.Sprites.ready("ryu") && FP.AtlasRyu) {
+        const rect = FP.AtlasRyu.frameRectFor(this);
+        if (rect) {
+          // ground shadow (baked frames are shadowless)
+          ctx.save();
+          const sa = U.clamp(1 - airH / 320, 0.2, 0.8), sw = (46 + (this.char.prop.bulk || 1) * 16) * U.clamp(1 - airH / 600, 0.5, 1);
+          ctx.translate(this.x, this.world.groundY); ctx.scale(1, 0.3);
+          ctx.beginPath(); ctx.arc(0, 0, sw, 0, U.TAU); ctx.fillStyle = `rgba(0,0,0,${sa})`; ctx.fill();
+          ctx.restore();
+          // after-images first (behind the live sprite)
+          if (this.trail) for (const t of this.trail) {
+            if (t.rect) FP.Sprites.drawCell(ctx, "ryu", t.rect, t.x, t.y, this.scale, t.facing, { alpha: U.clamp(t.life * 1.6, 0, 0.5), additive: true });
+          }
+          if (outline) { ctx.save(); ctx.shadowColor = outline; ctx.shadowBlur = 22; }
+          drewSprite = FP.Sprites.drawCell(ctx, "ryu", rect, this.x, this.y, this.scale, this.facing, { flash: this.flashWhite });
+          if (outline) ctx.restore();
+          this._anchor = {
+            head: { x: this.x, y: this.y - this.height() * 0.86 },
+            chest: { x: this.x, y: this.y - this.height() * 0.52 },
+            handF: { x: this.x + this.facing * 42 * this.scale, y: this.y - this.height() * 0.6 },
+            handB: { x: this.x + this.facing * 30 * this.scale, y: this.y - this.height() * 0.55 },
+            footF: { x: this.x + this.facing * 18 * this.scale, y: this.y },
+          };
+        }
+      }
+
+      if (!drewSprite) {
+        this._anchor = FP.Render.draw(ctx, {
+          x: this.x, y: this.y, facing: this.facing, char: this.char,
+          pose: this.poseNow(), airHeight: airH,
+          flashWhite: this.flashWhite, outlineGlow: outline,
+        });
+      }
 
       // charged aura particles
       if (this.chargeGlow > 0.3 || ready) {
