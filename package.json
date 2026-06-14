@@ -1,0 +1,16 @@
+{
+  "name": "fightingportable",
+  "version": "1.0.0",
+  "description": "FIGHTING PORTABLE — a browser-based 2D fighting game with original procedurally-animated fighters, motion-input specials, super meters and parallax stages. Zero binary assets.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node test/headless.js",
+    "preview": "node test/render-preview.js",
+    "serve": "node server.js"
+  },
+  "keywords": ["game", "fighting-game", "canvas", "html5", "2d"],
+  "license": "MIT",
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.0.0"
+  }
+}

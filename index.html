@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>FIGHTING PORTABLE — 2D Fighting Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<style>
+  /* Inline critical font fallback so the game looks right even offline */
+</style>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="stage-wrap">
+      <canvas id="game" width="1280" height="720"></canvas>
+
+      <!-- Loading overlay -->
+      <div id="loader" class="overlay">
+        <div class="logo-big">FIGHTING<span>PORTABLE</span></div>
+        <div class="loader-bar"><div class="loader-fill"></div></div>
+        <div class="loader-text">LOADING ASSETS…</div>
+      </div>
+
+      <!-- On-screen touch controls (mobile) -->
+      <div id="touch" class="hidden">
+        <div class="tc-pad">
+          <button class="tc-btn" data-k="left">◀</button>
+          <button class="tc-btn" data-k="down">▼</button>
+          <button class="tc-btn" data-k="up">▲</button>
+          <button class="tc-btn" data-k="right">▶</button>
+        </div>
+        <div class="tc-attacks">
+          <button class="tc-btn atk" data-k="lp">LP</button>
+          <button class="tc-btn atk" data-k="mp">MP</button>
+          <button class="tc-btn atk" data-k="hp">HP</button>
+          <button class="tc-btn atk" data-k="lk">LK</button>
+          <button class="tc-btn atk" data-k="mk">MK</button>
+          <button class="tc-btn atk" data-k="hk">HK</button>
+        </div>
+      </div>
+
+      <div id="hint">Press ENTER / TAP to start</div>
+    </div>
+  </div>
+
+  <!-- Engine -->
+  <script src="js/utils.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/camera.js"></script>
+  <!-- Graphics / data -->
+  <script src="js/skeleton.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/stage.js"></script>
+  <!-- Game logic -->
+  <script src="js/projectile.js"></script>
+  <script src="js/fighter.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/match.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

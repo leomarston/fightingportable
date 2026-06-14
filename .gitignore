@@ -1,0 +1,10 @@
+# dependencies (dev-only: used by test/render-preview.js)
+node_modules/
+
+# generated preview frames
+preview/
+
+# logs / os
+*.log
+npm-debug.log*
+.DS_Store
