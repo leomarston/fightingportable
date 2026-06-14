@@ -753,7 +753,7 @@
 
       // ---- sprite-sheet path (Ryu) with procedural fallback ----
       let drewSprite = false;
-      if (this.char.id === "ryu" && FP.Sprites && FP.Sprites.ready("ryu") && FP.AtlasRyu) {
+      if (this.char.id === "ryu" && FP.AtlasRyu && FP.AtlasRyu.enabled && FP.Sprites && FP.Sprites.ready("ryu")) {
         const rect = FP.AtlasRyu.frameRectFor(this);
         if (rect) {
           // ground shadow (baked frames are shadowless)

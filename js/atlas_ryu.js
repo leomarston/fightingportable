@@ -156,7 +156,8 @@
   const profiles = { baked: buildBaked(), source: buildSource() };
   const Atlas = {
     profiles,
-    ACTIVE: "source",   // use the supplied hand-drawn sheet
+    ACTIVE: "source",   // sheet profile (kept for the calibration tool)
+    enabled: false,     // OFF: use the upgraded cel-shaded renderer for Ryu too
     get current() { return this.profiles[this.ACTIVE]; },
     animFor,
     SPEC, CW, CH, COLS, FOOT_MARGIN,
