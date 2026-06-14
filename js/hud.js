@@ -123,6 +123,18 @@
     }
 
     _portrait(ctx, ch, x, y, s, mirror) {
+      // use the supplied sprite-sheet portrait when available
+      const sh = window.FP.Sprites && window.FP.Sprites.get(ch.id);
+      const fr = window.FP.AtlasRyu && ch.id === "ryu" && window.FP.AtlasRyu.namedFrame("portrait");
+      if (sh && sh.ready && sh.img && fr) {
+        ctx.save();
+        this._rrect(ctx, x, y, s, s, 6); ctx.clip();
+        ctx.translate(mirror ? x + s : x, y); if (mirror) ctx.scale(-1, 1);
+        try { ctx.drawImage(sh.img, fr.x, fr.y, fr.w, fr.h, 0, 0, s, s * (fr.h / fr.w)); } catch (e) {}
+        ctx.restore();
+        ctx.strokeStyle = ch.pal.trim; ctx.lineWidth = 3; this._rrect(ctx, x, y, s, s, 6); ctx.stroke();
+        return;
+      }
       ctx.save();
       ctx.translate(x, y);
       // frame

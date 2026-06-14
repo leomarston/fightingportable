@@ -93,33 +93,40 @@
      points — open the calibration overlay (O) to nudge them onto your
      own artwork, then read the adjusted numbers from the console. */
   function buildSource() {
-    // ANIMATIONS table geometry (tweak to match your PNG)
-    const T = { x0: 305, y0: 32, cellW: 165, cellH: 92, cols: 6, gapY: 8 };
-    // each table cell holds a few mini-poses; we sub-slice horizontally
-    const cellSub = (col, row, sub, subCount) => {
-      const cw = T.cellW / subCount;
-      return {
-        x: T.x0 + col * T.cellW + sub * cw, y: T.y0 + row * (T.cellH + T.gapY),
-        w: cw, h: T.cellH, ax: cw / 2, ay: T.cellH - 6,
-      };
+    // ANIMATIONS table geometry, measured from the reference sheet.
+    // Tune with the in-game calibration overlay (press O).
+    const T = { x0: 314, y0: 44, cw: 152, ch: 93, cols: 6 };
+    // one representative pose per state: take a centred slice of the cell
+    const cell = (col, row) => {
+      const w = T.cw * 0.62, h = T.ch - 24;
+      return { x: T.x0 + col * T.cw + T.cw * 0.17, y: T.y0 + row * T.ch + 20, w, h, ax: w / 2, ay: h - 3 };
     };
-    // map atlas keys -> (col,row,subCount) in the reference table
-    const tbl = {
-      idle: [0, 0, 2], walk: [1, 0, 3], dash: [2, 0, 2], jump: [3, 0, 3], crouch: [4, 0, 1], block: [5, 0, 1],
-      lp: [0, 1, 2], mp: [1, 1, 2], hp: [2, 1, 2], lk: [3, 1, 2], mk: [4, 1, 2], hk: [5, 1, 2],
-      clp: [0, 2, 2], clk: [1, 2, 2], jp: [2, 2, 2], jk: [3, 2, 2], blocklow: [4, 2, 1], jumpland: [5, 2, 1],
-      throw: [0, 3, 2], throwtech: [1, 3, 2], hurthigh: [2, 3, 2], hurtmid: [3, 3, 2], hurtlow: [4, 3, 2], knockdown: [5, 3, 2],
-      getup: [0, 4, 2], techback: [1, 4, 2], techfwd: [2, 4, 2], recovery: [3, 4, 1], victory: [5, 4, 1],
+    const sp = (x, y, w, h) => ({ x, y, w, h, ax: w / 2, ay: h - 3 });
+    // atlas key -> [col,row] in the ANIMATIONS table
+    const map = {
+      idle: [0, 0], walk: [1, 0], walkb: [1, 0], dash: [2, 0], jump: [3, 0], crouch: [4, 0], block: [5, 0], blocklow: [5, 0],
+      lp: [0, 1], mp: [1, 1], hp: [2, 1], lk: [3, 1], mk: [4, 1], hk: [5, 1],
+      clp: [0, 2], clk: [1, 2], jp: [2, 2], jk: [2, 2],
+      throw: [0, 3], hurthigh: [2, 3], hurtlow: [4, 3], knockdown: [5, 3],
+      getup: [0, 4], victory: [0, 0], intro: [0, 0],
     };
     const cells = []; const anims = {};
-    for (const key in tbl) {
-      const [col, row, sub] = tbl[key];
-      const idxs = [];
-      for (let i = 0; i < sub; i++) { idxs.push(cells.length); cells.push({ rect: cellSub(col, row, i, sub) }); }
-      anims[key] = { cells: idxs, fps: 10, loop: key === "idle" || key === "walk" || key === "victory" };
-    }
+    const push = (rect) => { cells.push({ rect }); return cells.length - 1; };
+    for (const k in map) { const [c, r] = map[k]; anims[k] = { cells: [push(cell(c, r))], fps: 8, loop: k === "idle" || k === "walk" }; }
+    // special moves live in their own rows lower on the sheet (approx; tune with O)
+    anims.fireball = { cells: [push(sp(286, 590, 92, 76))], fps: 8, loop: false };
+    anims.dp = { cells: [push(sp(286, 700, 84, 96))], fps: 8, loop: false };
+    anims.spin = { cells: [push(sp(286, 822, 92, 82))], fps: 8, loop: false };
+    anims.super = { cells: [push(sp(286, 590, 92, 76))], fps: 8, loop: false };
+    // clean single-image assets reused by the HUD / menus
+    const frames = {
+      portrait: { x: 14, y: 612, w: 108, h: 120 },
+      winportrait: { x: 130, y: 612, w: 108, h: 120 },
+      roundicon: { x: 176, y: 738, w: 60, h: 40 },
+    };
     return {
-      name: "source", explicit: true, cells, anims,
+      name: "source", explicit: true, cells, anims, frames,
+      drawScale: 3.0,   // reference poses are small; scale up to fighter size
       rect(index) { return cells[index].rect; },
     };
   }
@@ -149,10 +156,11 @@
   const profiles = { baked: buildBaked(), source: buildSource() };
   const Atlas = {
     profiles,
-    ACTIVE: "baked",
+    ACTIVE: "source",   // use the supplied hand-drawn sheet
     get current() { return this.profiles[this.ACTIVE]; },
     animFor,
     SPEC, CW, CH, COLS, FOOT_MARGIN,
+    namedFrame(name) { const p = this.current; return p.frames && p.frames[name]; },
     // resolve the rect for a fighter's current animation frame
     frameRectFor(f) {
       const prof = this.current;

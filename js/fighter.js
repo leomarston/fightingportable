@@ -763,11 +763,13 @@
           ctx.beginPath(); ctx.arc(0, 0, sw, 0, U.TAU); ctx.fillStyle = `rgba(0,0,0,${sa})`; ctx.fill();
           ctx.restore();
           // after-images first (behind the live sprite)
+          const tds = this.scale * ((FP.AtlasRyu.current && FP.AtlasRyu.current.drawScale) || 1);
           if (this.trail) for (const t of this.trail) {
-            if (t.rect) FP.Sprites.drawCell(ctx, "ryu", t.rect, t.x, t.y, this.scale, t.facing, { alpha: U.clamp(t.life * 1.6, 0, 0.5), additive: true });
+            if (t.rect) FP.Sprites.drawCell(ctx, "ryu", t.rect, t.x, t.y, tds, t.facing, { alpha: U.clamp(t.life * 1.6, 0, 0.5), additive: true });
           }
           if (outline) { ctx.save(); ctx.shadowColor = outline; ctx.shadowBlur = 22; }
-          drewSprite = FP.Sprites.drawCell(ctx, "ryu", rect, this.x, this.y, this.scale, this.facing, { flash: this.flashWhite });
+          const ds = this.scale * ((FP.AtlasRyu.current && FP.AtlasRyu.current.drawScale) || 1);
+          drewSprite = FP.Sprites.drawCell(ctx, "ryu", rect, this.x, this.y, ds, this.facing, { flash: this.flashWhite });
           if (outline) ctx.restore();
           this._anchor = {
             head: { x: this.x, y: this.y - this.height() * 0.86 },
